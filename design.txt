@@ -1,0 +1,9 @@
+
+A simple terminal music player written in C.
+
+TODO
+- Multithreading using message passing
+- Config file to store paths, library information
+
+
+
