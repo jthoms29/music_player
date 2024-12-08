@@ -1,31 +1,31 @@
 #include <stdio.h>
 #include <music_defs.h>
 #include <pthread.h>
+#include <string.h>
 
-#define MAX_PATH 1024
-char lib_path[1024];
+#define MINIAUDIO_IMPLEMENTATION
+#include <miniaudio.h>
+
+ma_result miniaudio_init(char* path) {
+  ma_result result;
+  ma_engine engine;
+
+  result = ma_engine_init(NULL, &engine);
+  if (result != MA_SUCCESS) {
+    return result;
+  }
 
 
-/* Reads library info (path, etc) from config file */
-int read_config(void) {
-  printf("read_config has been reached\n");
+  ma_engine_play_sound(&engine, path, NULL);
+  for (;;) {}
+
+
 }
 
-int main(void) {
-  int thread_ret;
-  pthread_t rd_cfg;
+int main(int argc, char** argv) {
+ char path[256];
+ strcpy(path, argv[1]);
+ printf("%s\n", path);
+ miniaudio_init(path);
 
-  
-
-  printf("Please enter path to music library:\n  ");
-  fgets(lib_path, MAX_PATH, stdin);
-  printf("%s\n", lib_path);
-
-  thread_ret = pthread_create(&rd_cfg, NULL, (void* (*) (void*)) read_config, 
-    NULL);
-
-  if (thread_ret != 0) {
-    printf("Thread error\n");
-  }
-  return 0;
 }
