@@ -5,8 +5,10 @@ typedef struct song {
   char* path;
   char* title;
   char* artist;
-  char* release_date;
-  char* length;
+  char* genre;
+  int year;
+  int track;
+  struct song* next_song;
 } song;
 
 

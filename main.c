@@ -7,7 +7,12 @@
 
 #define MINIAUDIO_IMPLEMENTATION
 #include <miniaudio.h>
-int playing = 0;
+
+
+/* The music library will be held in this array, which is indexed by the ascii
+ * code of the first letter of the artist's name. Each contains a linked list
+ * of artists */
+artist library[64];
 
 /* TODO wip, shouldn't loop forever */
 ma_result miniaudio_init(char* path) {
@@ -35,14 +40,14 @@ ma_result miniaudio_init(char* path) {
 
 
 
-void read_tag(char* path) {
+int read_tag(char* path) {
   TagLib_File *file;
   TagLib_Tag *tag;
 
   if((file = taglib_file_new(path)) == 0)
-      return;
+      return -1;
   if((tag = taglib_file_tag(file)) == 0)
-      return;
+      return -1;
 
   printf("%s\n", taglib_tag_title(tag));
   printf("%s\n", taglib_tag_artist(tag));
@@ -50,6 +55,8 @@ void read_tag(char* path) {
   printf("%d\n", taglib_tag_year(tag));
   printf("%d\n", taglib_tag_track(tag));
   printf("%s\n", taglib_tag_genre(tag));
+
+  return 0;
 }
 
 
@@ -65,19 +72,18 @@ void scan_folder(char* path) {
     printf("Invalid path\n");
     return;
   }
-
-  while((de = readdir(dir)) != NULL) {
     
-    full = (char*) malloc(strlen(path) + strlen(de->d_name));
+  char *ret;
+  full = (char*) malloc(strlen(path));
+  while((de = readdir(dir)) != NULL) {
+    full = (char*) realloc(full, strlen(path) + strlen(de->d_name));
     strcpy(full, path);
     strcat(full, de->d_name);
     read_tag(full);
-    miniaudio_init(full);
-    free(full);
-    full = NULL;
     }
 
   closedir(dir);
+  return ret;
 }
 
 int main(int argc, char** argv) {

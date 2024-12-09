@@ -1,6 +1,21 @@
 
 A simple terminal music player written in C.
 
+In order to get tags from the music files I will use the library taglib, and in
+order to play the files I will use the library miniaudio. The bulk of the work
+I do for this project will be sorting the files from a given source folder into
+a library using various data structures.
+
+Given a source folder, I will recursively check every file, and if an audio
+file is found the tags will be extracted. Using these tags, the data for this
+song will be put into a `song` struct (music_defs.h). Since it's likely that a
+library will have a large number of songs, I'm not sure if I want to do a call
+to malloc every single time I need one of these structs, so I'm going to look
+into any better methods of memory allocating, ideally allocating large chunks
+at a time.
+
+
+
 TODO
 - Multithreading using message passing
 - Config file to store paths, library information

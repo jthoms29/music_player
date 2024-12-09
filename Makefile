@@ -1,5 +1,5 @@
 CC = gcc
-CGLAGS = -g
+CFLAGS = -g
 CPPFLAGS = -Wall -pedantic -Wextra
 
 TAGLIB = /usr/local/lib/
