@@ -13,27 +13,36 @@ int playing = 0;
 ma_result miniaudio_init(char* path) {
   ma_result result;
   ma_engine engine;
+  ma_sound sound;
+
 
   result = ma_engine_init(NULL, &engine);
   if (result != MA_SUCCESS) {
     return result;
   }
 
-  if (!playing) {
-    if (ma_engine_play_sound(&engine, path, NULL))
-      return 0;
-  for (;;) {}
-
+  printf("%s\n", path);
+  result = ma_sound_init_from_file(&engine, path, 0, NULL, NULL, &sound);
+  if (result != MA_SUCCESS) {
+    return result;
   }
 
+  ma_sound_start(&sound);
+
+  sleep(4);
+  ma_sound(uninit());
 }
+
+
 
 void read_tag(char* path) {
   TagLib_File *file;
   TagLib_Tag *tag;
 
-  file = taglib_file_new(path);
-  tag = taglib_file_tag(file);
+  if((file = taglib_file_new(path)) == 0)
+      return;
+  if((tag = taglib_file_tag(file)) == 0)
+      return;
 
   printf("%s\n", taglib_tag_title(tag));
   printf("%s\n", taglib_tag_artist(tag));
@@ -46,28 +55,38 @@ void read_tag(char* path) {
 
 void scan_folder(char* path) {
   struct dirent *de; /*pointer for directory entry */
-  DIR *dr;           /* DIR pointer, what opendir returns */
-  dr = opendir(path);
+  DIR *dir;           /* DIR pointer, what opendir returns */
 
-  if (!dr) {
+
+  char* full;
+  dir = opendir(path);
+
+  if (!dir) {
     printf("Invalid path\n");
     return;
   }
 
-  while((de = readdir(dr)) != NULL) {
-    printf("%s\n", de->d_name);
-    miniaudio_init(de->d_name);
+  while((de = readdir(dir)) != NULL) {
+    
+    full = (char*) malloc(strlen(path) + strlen(de->d_name));
+    strcpy(full, path);
+    strcat(full, de->d_name);
+    read_tag(full);
+    miniaudio_init(full);
+    free(full);
+    full = NULL;
     }
 
-  closedir(dr);
+  closedir(dir);
 }
 
 int main(int argc, char** argv) {
- char path[256];
+ char* path;
+ path = (char*) malloc(strlen(argv[1]));
  strcpy(path, argv[1]);
  printf("%s\n", path);
  scan_folder(path);
 // read_tag(path);
-// miniaudio_init(path);
+ //miniaudio_init(path);
 
 }
