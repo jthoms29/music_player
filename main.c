@@ -2,9 +2,7 @@
 #include <music_defs.h>
 #include <pthread.h>
 #include <string.h>
-#include <tag_c.h>
-#include <dirent.h>
-
+//#include <glib.h>
 #define MINIAUDIO_IMPLEMENTATION
 #include <miniaudio.h>
 
@@ -12,9 +10,12 @@
 /* The music library will be held in this array, which is indexed by the ascii
  * code of the first letter of the artist's name. Each contains a linked list
  * of artists */
-artist library[64];
 
-/* TODO wip, shouldn't loop forever */
+/* As of now, the starting letter of the artist can only be from ascii
+ * characters A to z */
+GList library[81];
+
+
 ma_result miniaudio_init(char* path) {
   ma_result result;
   ma_engine engine;
@@ -40,59 +41,11 @@ ma_result miniaudio_init(char* path) {
 
 
 
-int read_tag(char* path) {
-  TagLib_File *file;
-  TagLib_Tag *tag;
-
-  if((file = taglib_file_new(path)) == 0)
-      return -1;
-  if((tag = taglib_file_tag(file)) == 0)
-      return -1;
-
-  printf("%s\n", taglib_tag_title(tag));
-  printf("%s\n", taglib_tag_artist(tag));
-  printf("%s\n", taglib_tag_album(tag));
-  printf("%d\n", taglib_tag_year(tag));
-  printf("%d\n", taglib_tag_track(tag));
-  printf("%s\n", taglib_tag_genre(tag));
-
-  return 0;
-}
-
-
-void scan_folder(char* path) {
-  struct dirent *de; /*pointer for directory entry */
-  DIR *dir;           /* DIR pointer, what opendir returns */
-
-
-  char* full;
-  dir = opendir(path);
-
-  if (!dir) {
-    printf("Invalid path\n");
-    return;
-  }
-    
-  char *ret;
-  full = (char*) malloc(strlen(path));
-  while((de = readdir(dir)) != NULL) {
-    full = (char*) realloc(full, strlen(path) + strlen(de->d_name));
-    strcpy(full, path);
-    strcat(full, de->d_name);
-    read_tag(full);
-    }
-
-  closedir(dir);
-  return ret;
-}
-
 int main(int argc, char** argv) {
  char* path;
  path = (char*) malloc(strlen(argv[1]));
  strcpy(path, argv[1]);
  printf("%s\n", path);
  scan_folder(path);
-// read_tag(path);
- //miniaudio_init(path);
-
+ return 0;
 }
