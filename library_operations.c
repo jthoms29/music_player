@@ -8,6 +8,52 @@
 
 extern GList library[81];
 
+gint find_artist(gconstpointer list_artist, gconstpointer my_artist_str) {
+  const char* str_ref = (char*) my_artist_str;
+  const artist* art_ref = (artist*) list_artist;
+  return strcmp(str_ref, art_ref->name);
+}
+
+gint insert_artist(gconstpointer my_artist, gconstpointer list_artist) {
+  const artist* my_art_ref = (artist*) my_artist;
+  const artist* list_art_ref = (artist*) list_artist;
+  return strcmp(my_art_ref->name, list_art_ref->name);
+}
+
+
+int song_to_lib(song* sng) {
+  char* sng_artist;
+  GList* found_artist_loc;
+  artist* new_artist;
+  album *found_album, *new_album;
+  char start_letter; 
+  int index;
+
+  /* The first letter of the artist's name will be used to index into the
+   * global list array*/
+  start_letter = sng->artist[0];
+  index = start_letter - 41;
+
+  /* check if list exists */
+  if (library[index]) {
+    found_artist_loc = g_list_find_custom(library+index, 
+      sng->artist, (GCompareFunc) find_artist); 
+  }
+
+  /* If the artist was not found in the library, they must be added */
+  if (!found_artist_loc) {
+    new_artist = (artist*) malloc(sizeof(artist));
+    strcpy(new_artist->name, sng->artist);
+    /* Will be inserted in alphabetical order */
+    found_artist_loc = g_list_insert_sorted(library+index, 
+      (gpointer) new_artist, (GCompareFunc) insert_artist);
+  }
+
+  char* str = ((artist*) library['T'-41].data)->name;
+  printf("yuppp %s\n", str);
+
+}
+
 song* read_tag(char* path) {
   song* song_ret;
   TagLib_File *file;
@@ -40,16 +86,7 @@ song* read_tag(char* path) {
 }
 
 
-int song_to_lib(song* sng) {
-  char start_letter; 
 
-  /*this will be used to index into the global artist array */
-  start_letter = sng->artist[0];
-
-  Gsearch
-
-
-}
 
 int print_song_data(song* sng) {
   if (!sng) {
