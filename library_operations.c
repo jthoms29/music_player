@@ -4,11 +4,11 @@
 #include <string.h>
 #include <tag_c.h>
 #include <dirent.h>
-//#include <glib.h>
 
-extern GList library[81];
+extern GList* library[81];
 
 gint find_artist(gconstpointer list_artist, gconstpointer my_artist_str) {
+  if (!list_artist) return -1;
   const char* str_ref = (char*) my_artist_str;
   const artist* art_ref = (artist*) list_artist;
   return strcmp(str_ref, art_ref->name);
@@ -23,8 +23,8 @@ gint insert_artist(gconstpointer my_artist, gconstpointer list_artist) {
 
 int song_to_lib(song* sng) {
   char* sng_artist;
-  GList* found_artist_loc;
-  artist* new_artist;
+  GList *found_artist_loc;
+  artist *found_artist, *new_artist;
   album *found_album, *new_album;
   char start_letter; 
   int index;
@@ -35,8 +35,9 @@ int song_to_lib(song* sng) {
   index = start_letter - 41;
 
   /* check if list exists */
-  if (library[index]) {
-    found_artist_loc = g_list_find_custom(library+index, 
+  found_artist_loc = NULL;
+  if (library[index] != NULL) {
+    found_artist_loc = g_list_find_custom(library[index], 
       sng->artist, (GCompareFunc) find_artist); 
   }
 
@@ -45,12 +46,17 @@ int song_to_lib(song* sng) {
     new_artist = (artist*) malloc(sizeof(artist));
     strcpy(new_artist->name, sng->artist);
     /* Will be inserted in alphabetical order */
-    found_artist_loc = g_list_insert_sorted(library+index, 
+    found_artist_loc = g_list_insert_sorted(library[index], 
       (gpointer) new_artist, (GCompareFunc) insert_artist);
+
+    /* set library index to possible new start of list */
+    library[index] = found_artist_loc;
   }
 
-  char* str = ((artist*) library['T'-41].data)->name;
-  printf("yuppp %s\n", str);
+
+  /* Now, we must do something similar for the song's album */
+  found_artist = (artist*) found_artist_loc->data;
+
 
 }
 
