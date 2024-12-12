@@ -14,16 +14,29 @@ gint find_artist(gconstpointer list_artist, gconstpointer my_artist_str) {
   return strcmp(str_ref, art_ref->name);
 }
 
-gint insert_artist(gconstpointer my_artist, gconstpointer list_artist) {
-  const artist* my_art_ref = (artist*) my_artist;
+gint insert_artist(gconstpointer list_artist, gconstpointer my_artist) {
   const artist* list_art_ref = (artist*) list_artist;
+  const artist* my_art_ref = (artist*) my_artist;
   return strcmp(my_art_ref->name, list_art_ref->name);
+}
+
+gint find_album(gconstpointer list_album, constpointer my_album_str) {
+  const char* str_ref = (char*) my_album_str;
+  const album* alb_ref = (album*) list_album;
+  return strcmpt(str_ref, alb_ref->title);
+}
+
+gint insert_album(gconstpointer list_album, gconstpointer my_album) {
+  const album* list_alb_ref = (album*) list_album;
+  const album* my_alb_ref = (album*) my_album;
+  
+
 }
 
 
 int song_to_lib(song* sng) {
   char* sng_artist;
-  GList *found_artist_loc;
+  GList *found_artist_loc, *found_album_loc;
   artist *found_artist, *new_artist;
   album *found_album, *new_album;
   char start_letter; 
@@ -56,6 +69,23 @@ int song_to_lib(song* sng) {
 
   /* Now, we must do something similar for the song's album */
   found_artist = (artist*) found_artist_loc->data;
+  if (found_artist->albums != NULL) {
+    found_album_loc = g_list_find_custom(found_artist->albums, sng->album,
+      (GCompareFunc) find_album);
+  }
+
+  /* Album was not found in artist, must be added */
+  if (!found_album_loc) {
+    new_album = (album*) malloc(sizeof(album));
+    strcpy(new_album->title, sng->album);
+    strcpy(new_album->artist, sng->artist);
+    strcpy(new_album->genre, sng->genre);
+    new_album->year = sng->year;
+    new_album->tracks = 0;
+
+    found_album_loc = g_list_insert_sorted(found_artist->albums,
+      (gpointer) new_album, (GCompareFuc) insert_album);
+  }
 
 
 }
