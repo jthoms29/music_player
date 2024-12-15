@@ -32,7 +32,7 @@ gint insert_album(gconstpointer list_album, gconstpointer my_album) {
 
 }
 
-gint insert_song(gconstpointer my_song, gconstpointer list_song) {
+gint insert_song(gconstpointer list_song, gconstpointer my_song) {
   const song* list_song_ref = (song*) list_song;
   const song* my_song_ref = (song*) my_song;
   return list_song_ref->track - my_song_ref->track;
@@ -54,19 +54,15 @@ int song_to_lib(song* sng) {
   start_letter = sng->artist[0];
   index = start_letter - 41;
 
-  found_artist_loc == NULL;
-  /* check if list exists */
-  if (library[index] != NULL) {
-    found_artist_loc = g_list_find_custom(library[index], 
-      sng->artist, (GCompareFunc) find_artist); 
+  found_artist_loc = g_list_find_custom(library[index], 
+    sng->artist, (GCompareFunc) find_artist); 
 
-    if (found_artist_loc != NULL) {
+  if (found_artist_loc) {
       found_artist = (artist*) found_artist_loc->data;
-    }
   }
 
   /* If the artist was not found in the library, they must be added */
-  if (found_artist_loc == NULL) {
+  else {
     new_artist = (artist*) malloc(sizeof(artist));
     strcpy(new_artist->name, sng->artist);
     /* Will be inserted in alphabetical order */
@@ -80,19 +76,17 @@ int song_to_lib(song* sng) {
   }
 
 
-  printf("artist added\n");
 
   /* Now, we must do something similar for the song's album */
-  if (found_artist->albums != NULL) {
-    found_album_loc = g_list_find_custom(found_artist->albums, sng->album,
-      (GCompareFunc) find_album);
+  found_album_loc = g_list_find_custom(found_artist->albums, sng->album,
+    (GCompareFunc) find_album);
 
-
+  if (found_album_loc) {
     found_album = (album*) found_album_loc->data;
   }
 
   /* Album was not found in artist, must be added */
-  if (!found_album_loc) {
+  else {
     new_album = (album*) malloc(sizeof(album));
     strcpy(new_album->title, sng->album);
     strcpy(new_album->artist, sng->artist);
@@ -107,7 +101,6 @@ int song_to_lib(song* sng) {
     found_album = new_album;
   }
 
-  printf("song added\n");
   /* And now the song must be put in the album */
   found_song_loc = g_list_insert_sorted(found_album->songs, (gpointer) sng,
     (GCompareFunc) insert_song);
@@ -144,11 +137,48 @@ song* read_tag(char* path) {
   song_ret->year = taglib_tag_year(tag);
   song_ret->track = taglib_tag_track(tag);
 
-  song_to_lib(song_ret);
   return song_ret;
 }
 
+void lib_test(void) {
+  GList* artWalker;
+  GList* albWalker;
+  GList* songWalker;
+  artist* testArt;
+  album* testAlb;
+  song* testSong;
+  char full[256];
+  for (int i = 0; i < 81; i++) {
+    artWalker = library[i];
+    while (artWalker != NULL) {
+      testArt = (artist*) artWalker->data;
+      printf("%s\n", testArt->name);
 
+      albWalker = testArt->albums;
+
+      while(albWalker != NULL) {
+        testAlb = (album*) albWalker->data;
+        printf("%s\n", testAlb->title);
+
+
+        songWalker = testAlb->songs;
+
+        while(songWalker != NULL) {
+          testSong = (song*) songWalker->data;
+          printf("%s\n", testSong->title);
+
+          songWalker = songWalker->next;
+          strcpy(full, testSong->path);
+
+        }
+//        miniaudio_init(full);
+        albWalker = albWalker->next;
+      }
+      artWalker = artWalker->next;
+    }
+  }
+
+}
 
 
 int print_song_data(song* sng) {
@@ -170,9 +200,10 @@ int print_song_data(song* sng) {
 void scan_folder(char* path) {
   struct dirent *de; /*pointer for directory entry */
   DIR *dir;           /* DIR pointer, what opendir returns */
+  char full[256];     /* Used to hold Full path of file */
+  song* tag_return;
 
 
-  char* full;
   dir = opendir(path);
 
   if (!dir) {
@@ -180,59 +211,27 @@ void scan_folder(char* path) {
     return;
   }
     
-  song *ret;
-  song *ret2;
-  full = (char*) malloc(strlen(path));
   while((de = readdir(dir)) != NULL) {
-    full = (char*) realloc(full, strlen(path) + strlen(de->d_name));
-    strcpy(full, path);
-    strcat(full, de->d_name);
-    ret = read_tag(full);
-   // if (ret) {
-  //    print_song_data(ret);
-  //  }
-  }
-
-  GList* artWalker;
-  GList* albWalker;
-  GList* songWalker;
-  artist* testArt;
-  album* testAlb;
-  song* testSong;
-  for (int i = 0; i < 81; i++) {
-    artWalker = library[i];
-    while (artWalker != NULL) {
-      testArt = (artist*) artWalker->data;
-      printf("%s\n", testArt->name);
-
-      albWalker = testArt->albums;
-
-      while(albWalker != NULL) {
-        testAlb = (album*) albWalker->data;
-        printf("%s\n", testAlb->title);
-
-
-        songWalker = testAlb->songs;
-
-        while(songWalker != NULL) {
-          testSong = (song*) songWalker->data;
-          printf("%s\n", testSong->title);
-
-          songWalker = songWalker->next;
-
-
-        }
-
-        albWalker = albWalker->next;
-
-      }
-
-      artWalker = artWalker->next;
+    if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) {
+      continue;
     }
 
+    strcpy(full, path);
+    strcat(full, "/");
+    strcat(full, de->d_name);
 
+    /* If this file is a directory, scan recursively */
+    if (de->d_type == DT_DIR) {
+      scan_folder(full);
+    }
+    else {
+      tag_return = read_tag(full);
+      if (tag_return) {
+        song_to_lib(tag_return);
+      }
+    }
   }
-
   closedir(dir);
+
 }
 
