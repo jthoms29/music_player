@@ -33,9 +33,12 @@ ma_result miniaudio_init(char* path) {
     return result;
   }
 
+  char d;
   ma_sound_start(&sound);
 
-  sleep(4);
+
+  fgetc(stdin);
+
   ma_sound(uninit());
 }
 
@@ -47,5 +50,8 @@ int main(int argc, char** argv) {
  strcpy(path, argv[1]);
  printf("%s\n", path);
  scan_folder(path);
+
+ cursor();
+
  return 0;
 }
