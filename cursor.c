@@ -97,9 +97,8 @@ void cursor(void) {
     print_songs(cur_album);
 
     scanf("%d", &track_choice);
-    get_song(cur_album, track_choice);
 
-
+    play_audio(cur_album, track_choice);
 
   }
 }
