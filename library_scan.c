@@ -39,6 +39,13 @@ gint insert_song(gconstpointer list_song, gconstpointer my_song) {
 
 }
 
+gint find_track(gconstpointer alb_song, gconstpointer track_idx) {
+  const song* song_ref = (song*) alb_song;
+  int trck = *((int*) track_idx);
+
+  return song_ref->track - trck;
+
+}
 
 int song_to_lib(song* sng) {
   char* sng_artist;

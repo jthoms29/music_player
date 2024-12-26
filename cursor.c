@@ -65,7 +65,6 @@ void cursor(void) {
     fgets(choice, MAX_TITLE, stdin);
 
     choice[strlen(choice) -1] = 0;
-    printf("%s\n", choice);
 
     lib_index = choice[0] - 41;
 
@@ -78,7 +77,6 @@ void cursor(void) {
     }
 
     cur_artist = (artist*) found_artist->data;
-    printf("%s:\n", cur_artist->name);
     print_albums(cur_artist);
 
     fgets(choice, MAX_TITLE, stdin);
