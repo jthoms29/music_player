@@ -103,14 +103,27 @@ int play_audio(album* albm, int start_track) {
 
 }
 
+/* switches between library and song controls. Audio should always play
+ * in backround except if paused. */
 void server(void) {
   char message[256];
-  fgets(message, 256, stdin);
-  message[strlen(message)] = 0;
+  pthread_t thread_table[3];
+
+
+  pthread_create(thread_table, NULL, cursor, NULL);
+  pthread_create(thread_table+1, NULL, play_audio, NULL);
+  pthread_create(thread_table+2, NULL, controls, NULL);
+
+
+  for(;;) {
+
+
+  }
 
 
 
-  if message = 
+
+
 
 
 
@@ -118,11 +131,13 @@ void server(void) {
 
 int main(int argc, char** argv) {
  char* path;
+
  path = (char*) malloc(strlen(argv[1]));
  strcpy(path, argv[1]);
  init_engine();
  scan_folder(path);
- cursor();
+ server();
+
 
  return 0;
 }
