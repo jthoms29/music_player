@@ -58,7 +58,7 @@ int play_audio() {
     /* No songs currently, go to sleep */
     pthread_mutex_lock(&song_choice_tex);
     if (!songs) {
-      printf("no songs\n");
+//      printf("no songs\n");
       pthread_mutex_unlock(&song_choice_tex);
       pthread_cond_wait(&player_sleep, &player_tex);
       printf("i'm uyp");
@@ -147,6 +147,13 @@ int controls(album* albm, int start_track) {
     fgets(command, 256, stdin);
 
     command[strlen(command) - 1] = 0;
+
+    if (!strcmp(command, "lib")) {
+        pthread_cond_signal(&cursor_sleep);
+        pthread_cond_wait(&control_sleep, &control_tex);
+        continue;
+    }
+
     cmd_alert = 1;
     pthread_cond_wait(&control_cmd_sleep, &control_tex);
   }
