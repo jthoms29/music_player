@@ -3,9 +3,18 @@
 
 extern GList* library[81];
 
-artist* current_artist;
-album* current_album;
+extern GList* songs;
+extern int track_choice;
 
+//artist* current_artist;
+//album* current_album;
+
+extern pthread_mutex_t cursor_tex;
+extern pthread_mutex_t song_choice_tex;
+extern pthread_mutex_t player_tex;
+extern pthread_cond_t cursor_sleep;
+extern pthread_cond_t control_sleep;
+extern pthread_cond_t player_sleep;
 /* Go through library, printing the name of each artist */
 void print_artists(void) {
   GList* art_walker;
@@ -47,17 +56,16 @@ void print_songs(album* albm) {
 }
 
 
-
-
 void cursor(void) {
   GList *found_artist, *found_album, *found_song;
   artist* cur_artist;
   album* cur_album;
 
   char choice[MAX_TITLE];
-  int track_choice;
   int lib_index;
+  int track_check;
 
+  pthread_mutex_lock(&cursor_tex);
   for(;;) {
     print_artists();
 
@@ -94,9 +102,18 @@ void cursor(void) {
 
     print_songs(cur_album);
 
-    scanf("%d", &track_choice);
+    scanf("%d", &track_check);
 
-    play_audio(cur_album, track_choice);
+    pthread_mutex_lock(&song_choice_tex);
+    songs = cur_album->songs;
+    track_choice = track_check;
+    pthread_mutex_unlock(&song_choice_tex);
+
+    pthread_cond_signal(&player_sleep);
+    pthread_cond_signal(&control_sleep);
+    pthread_cond_wait(&cursor_sleep, &cursor_tex);
+    //play_audio(cur_album, track_choice);
 
   }
+  pthread_mutex_unlock(&cursor_tex);
 }
