@@ -4,7 +4,7 @@
 #define MUSIC_DEFS_H
 
 #include <glib.h>
-#define MAX_TITLE 64
+#define MAX_TITLE 128
 #define MAX_PATH 128
 
 typedef struct song {
@@ -20,12 +20,12 @@ typedef struct song {
 
 
 typedef struct album {
-  char* title;
-  char* artist;
-  char* release_date;
-  char* length;
-  unsigned int num_songs;
-  song* songs;
+  char title[MAX_TITLE];
+  char artist[MAX_TITLE];
+  char genre[MAX_TITLE];
+  unsigned int year;
+  unsigned int tracks;
+  GList* songs;
 } album;
 
 
@@ -35,9 +35,18 @@ typedef struct artist {
 } artist;
 
 
+int play_audio();
+
 /*library_operations */
 song* read_tag(char* path);
 int print_song_data(song* sng);
 void scan_folder(char* path);
+void lib_test(void);
 
+
+/* cursor */
+void cursor(void);
+gint find_artist(gconstpointer list_artist, gconstpointer my_artist_str);
+gint find_album(gconstpointer list_album, gconstpointer my_album_str);
+gint find_track(gconstpointer alb_track, gconstpointer track_idx);
 #endif

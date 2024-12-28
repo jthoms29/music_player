@@ -27,6 +27,7 @@ pthread_mutex_t song_choice_tex = PTHREAD_MUTEX_INITIALIZER;
 GList library[81];
 
 ma_engine* engine;
+ma_device_config device_config;
 ma_sound sound;
 
 GList* songs = 0;
@@ -37,6 +38,7 @@ int cmd_alert = 0;
 
 int paused = 0;
 
+
 ma_result init_engine() {
   ma_result result;
 
@@ -44,11 +46,12 @@ ma_result init_engine() {
   engine = malloc(sizeof(ma_engine));
   result = ma_engine_init(NULL, engine);
   return result;
-}
+} 
 
 int play_audio() {
   song* cur_song;
   ma_result result;
+
   /* needed for cond variable */
   pthread_mutex_lock(&player_tex);
   for(;;) {
@@ -65,12 +68,14 @@ int play_audio() {
     }
     printf("yep");
     cur_song = (song*) songs->data;
-    result = ma_sound_init_from_file(engine, cur_song->path, 0, NULL, NULL,
-      &sound);
+    result = ma_sound_init_from_file(engine, cur_song->path, MA_SOUND_FLAG_DECODE, NULL, NULL,
+      &sound); 
+
     if (result != MA_SUCCESS) {
         printf("nope");
       return result;
     }
+
 
     ma_sound_start(&sound);
 
@@ -83,9 +88,6 @@ int play_audio() {
       fflush(stdout);
 
       while (!cmd_alert && !ma_sound_at_end(&sound)) {
-        sleep(2);
-        ma_sound_stop(&sound);
-        ma_sound_start(&sound);
       }
 
       if (cmd_alert) {
@@ -130,7 +132,6 @@ int play_audio() {
       /* default functionality is to automatically play next song in album */
       songs = songs->next;
     }
-
 
   }
   pthread_mutex_unlock(&player_tex);
