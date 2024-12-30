@@ -4,17 +4,23 @@
 extern GList* library[81];
 
 extern GList* songs;
-extern int track_choice;
+extern int current_focus;
+extern int swap;
 
+extern int cur_window;
+extern int new_song;
+extern int first_song;
 //artist* current_artist;
 //album* current_album;
 
-extern pthread_mutex_t cursor_tex;
-extern pthread_mutex_t song_choice_tex;
-extern pthread_mutex_t player_tex;
-extern pthread_cond_t cursor_sleep;
+extern pthread_mutex_t lib_cmd_tex;
+extern pthread_mutex_t control_tex;
+
+extern pthread_cond_t lib_sleep;
 extern pthread_cond_t control_sleep;
-extern pthread_cond_t player_sleep;
+extern int lib_cmd;
+
+extern char command[256];
 /* Go through library, printing the name of each artist */
 void print_artists(void) {
   GList* art_walker;
@@ -61,59 +67,86 @@ void cursor(void) {
   artist* cur_artist;
   album* cur_album;
 
-  char choice[MAX_TITLE];
   int lib_index;
   int track_check;
 
-  pthread_mutex_lock(&cursor_tex);
+  //pthread_mutex_lock(&lib_tex);
   for(;;) {
-    print_artists();
+    pthread_mutex_lock(&lib_cmd_tex);
+    while (!found_artist) {
 
-    printf("Choose artist: \n");
-    fgets(choice, MAX_TITLE, stdin);
 
-    choice[strlen(choice) -1] = 0;
+      print_artists();
+      printf("Choose artist: \n");
+      //fgets(choice, MAX_TITLE, stdin);
+      lib_cmd = 0;
 
-    lib_index = choice[0] - 41;
+      pthread_cond_signal(&control_sleep);
 
-    found_artist = g_list_find_custom(library[lib_index], choice,
-      (GCompareFunc) find_artist);
-
-    if (!found_artist) {
-      printf("No such artist\n\n");
-      continue;
-    }
-
-    cur_artist = (artist*) found_artist->data;
-    print_albums(cur_artist);
-
-    fgets(choice, MAX_TITLE, stdin);
-    choice[strlen(choice) -1] = 0;
-
-    found_album = g_list_find_custom(cur_artist->albums, choice,
-      (GCompareFunc) find_album);
-
-    if (!found_album) {
-        printf("No such album\n\n");
+      pthread_cond_wait(&lib_sleep, &lib_cmd_tex);
+     
+      if (!strcmp(command, "refresh")) {
+        pthread_mutex_unlock(&lib_cmd_tex);
         continue;
+      }
+
+//      else if (!strcmp(command, ":back")) {
+ //       break;
+  //    }
+
+      lib_index = command[0] - 41;
+
+      found_artist = g_list_find_custom(library[lib_index], command,
+        (GCompareFunc) find_artist);
+
+      if (!found_artist) {
+        printf("No such artist\n\n");
+        continue;
+      }
+
+      cur_artist = (artist*) found_artist->data;
+      found_artist = 0;
+
+      while (!found_album) {
+
+        print_albums(cur_artist);
+        lib_cmd = 0;
+        pthread_cond_signal(&control_sleep);
+        pthread_cond_wait(&lib_sleep, &lib_cmd_tex);
+
+        if (!strcmp(command, "refresh")) {
+          continue;
+        }
+
+        else if (!strcmp(command, ":back")) {
+          break;
+        }
+
+        found_album = g_list_find_custom(cur_artist->albums, command,
+          (GCompareFunc) find_album);
+
+        if (!found_album) {
+          printf("No such album\n\n");
+          continue;
+        }
+
+        cur_album = (album*) found_album->data;
+        found_album = 0;
+        //while (found_track) {
+          print_songs(cur_album);
+
+
+          if (songs == NULL) first_song = 1;
+          else new_song = 1;
+ 
+          songs = cur_album->songs;
+
+          lib_cmd = 0;
+          pthread_cond_signal(&control_sleep);
+          pthread_cond_wait(&lib_sleep, &lib_cmd_tex);
+       // }
+      }
     }
-
-    cur_album = (album*) found_album->data;
-
-    print_songs(cur_album);
-
-    scanf("%d", &track_check);
-
-    pthread_mutex_lock(&song_choice_tex);
-    songs = cur_album->songs;
-    track_choice = track_check;
-    pthread_mutex_unlock(&song_choice_tex);
-
-    pthread_cond_signal(&player_sleep);
-    pthread_cond_signal(&control_sleep);
-    pthread_cond_wait(&cursor_sleep, &cursor_tex);
-    //play_audio(cur_album, track_choice);
-
   }
-  pthread_mutex_unlock(&cursor_tex);
+//  pthread_mutex_unlock(&lib_tex);
 }
