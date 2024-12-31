@@ -5,24 +5,26 @@
 #include <tag_c.h>
 #include <dirent.h>
 
-extern GList* library[81];
+#include<strings.h>
+extern GList* library[27];
 
 gint find_artist(gconstpointer list_artist, gconstpointer my_artist_str) {
   const char* str_ref = (char*) my_artist_str;
   const artist* art_ref = (artist*) list_artist;
-  return strcmp(str_ref, art_ref->name);
+
+  return strcasecmp(str_ref, art_ref->name);
 }
 
 gint insert_artist(gconstpointer list_artist, gconstpointer my_artist) {
   const artist* list_art_ref = (artist*) list_artist;
   const artist* my_art_ref = (artist*) my_artist;
-  return strcmp(my_art_ref->name, list_art_ref->name);
+  return strcasecmp(my_art_ref->name, list_art_ref->name);
 }
 
 gint find_album(gconstpointer list_album, gconstpointer my_album_str) {
   const char* str_ref = (char*) my_album_str;
   const album* alb_ref = (album*) list_album;
-  return strcmp(str_ref, alb_ref->title);
+  return strcasecmp(str_ref, alb_ref->title);
 }
 
 gint insert_album(gconstpointer list_album, gconstpointer my_album) {
@@ -58,8 +60,8 @@ int song_to_lib(song* sng) {
 
   /* The first letter of the artist's name will be used to index into the
    * global list array*/
-  start_letter = sng->artist[0];
-  index = start_letter - 41;
+  start_letter = tolower(sng->artist[0]);
+  index = start_letter - 97;
 
   found_artist_loc = g_list_find_custom(library[index], 
     sng->artist, (GCompareFunc) find_artist); 
@@ -147,45 +149,6 @@ song* read_tag(char* path) {
   return song_ret;
 }
 
-void lib_test(void) {
-  GList* artWalker;
-  GList* albWalker;
-  GList* songWalker;
-  artist* testArt;
-  album* testAlb;
-  song* testSong;
-  char full[256];
-  for (int i = 0; i < 81; i++) {
-    artWalker = library[i];
-    while (artWalker != NULL) {
-      testArt = (artist*) artWalker->data;
-      printf("%s\n", testArt->name);
-
-      albWalker = testArt->albums;
-
-      while(albWalker != NULL) {
-        testAlb = (album*) albWalker->data;
-        printf("  %d - %s\n", testAlb->year, testAlb->title);
-
-
-        songWalker = testAlb->songs;
-
-        while(songWalker != NULL) {
-          testSong = (song*) songWalker->data;
-          printf("    %d - %s\n",testSong->track, testSong->title);
-
-          songWalker = songWalker->next;
-          strcpy(full, testSong->path);
-
-        }
-//        miniaudio_init(full);
-        albWalker = albWalker->next;
-      }
-      artWalker = artWalker->next;
-    }
-  }
-
-}
 
 
 int print_song_data(song* sng) {
@@ -245,14 +208,12 @@ void scan_folder(char* path) {
 
 GDestroyNotify free_album(void* albm) {
   album* cur_album = (album*) albm;
-/*  printf("freeing %s\n", cur_album->title); */
   g_list_free_full(cur_album->songs, free);
   free(cur_album);
 }
 
 GDestroyNotify free_artist(void* artst) {
   artist* cur_artist = (artist*) artst;
-/*  printf("freeing %s\n", cur_artist->name); */
   g_list_free_full(cur_artist->albums, free_album);
   free(cur_artist);
 }
@@ -260,7 +221,7 @@ GDestroyNotify free_artist(void* artst) {
 
 void free_lib() {
   int i;
-  for (i = 0; i < 81; i++) {
+  for (i = 0; i < 27; i++) {
     g_list_free_full(library[i], free_artist);
   }
   printf("library freed\n");

@@ -21,8 +21,8 @@ pthread_cond_t lib_sleep = PTHREAD_COND_INITIALIZER;
  * of artists, each of which contains a linked list of albums */
 
 /* As of now, the starting letter of the artist can only be from ascii
- * characters A to z */
-GList library[81];
+ * characters a to z */
+GList library[27];
 
 
 pthread_t thread_table[3];
@@ -50,13 +50,27 @@ ma_result init_engine() {
   return result;
 } 
 
-int play_audio() {
-  song* cur_song;
-  pthread_t check;
-  ma_result result;
 
+void end_check() {
+  while (!ma_sound_at_end(&sound)) {}
+  pthread_mutex_lock(&play_cmd_tex);
+  strcpy(command, "next");
+  play_cmd = 1;
+  pthread_cond_signal(&player_sleep);
+  if (play_cmd) {
+    pthread_cond_wait(&control_sleep, &play_cmd_tex);
+  }
+  pthread_mutex_unlock(&play_cmd_tex);
+}
+
+
+void play_audio() {
+  song* cur_song;
+  ma_result result;
+  pthread_t check;
   int paused = 0;
 
+    pthread_mutex_lock(&play_cmd_tex);
   for(;;) {
     /* No songs currently, go to sleep */
     pthread_mutex_lock(&song_check_tex);
@@ -73,9 +87,12 @@ int play_audio() {
       &sound); 
 
     if (result != MA_SUCCESS) {
-      return result;
+      printf("uh oh");
+      pthread_exit(0);
     }
+
     ma_sound_start(&sound);
+    pthread_create(&check, NULL, end_check, NULL);
     while(!ma_sound_at_end(&sound)) {
       /* refresh line */
 
@@ -86,15 +103,15 @@ int play_audio() {
         fflush(stdout);
       }
 
-    while (!ma_sound_at_end(&sound) && !play_cmd) {}
-      //pthread_cond_wait(&player_sleep, &player_tex);
+//    while (!ma_sound_at_end(&sound) && !play_cmd) {}
+         
+      pthread_cond_wait(&player_sleep, &play_cmd_tex);
       if (play_cmd) {
 
         if (!strcmp(command, "refresh")) {
           break;
         }
 
-        
         else if (!strcmp(command, "next")) {
           songs = songs->next;
           paused = 0;
@@ -124,11 +141,10 @@ int play_audio() {
           pthread_exit(0);
         }
 
-
-        pthread_mutex_lock(&play_cmd_tex);
+   //     pthread_mutex_lock(&play_cmd_tex);
         play_cmd = 0;
         pthread_cond_signal(&control_sleep);
-        pthread_mutex_unlock(&play_cmd_tex);
+  //      pthread_mutex_unlock(&play_cmd_tex);
       }
     }
     
@@ -137,15 +153,15 @@ int play_audio() {
    // sound = NULL;
 
     if (play_cmd) {
-      pthread_mutex_lock(&play_cmd_tex);
+//      pthread_mutex_lock(&play_cmd_tex);
       play_cmd = 0;
       pthread_cond_signal(&control_sleep);
-      pthread_mutex_unlock(&play_cmd_tex);
+ //     pthread_mutex_unlock(&play_cmd_tex);
     }
 
     else {
       songs = songs->next;
-      printf("\n");
+      if (current_focus == CONT) printf("\n");
     }
   }
 }
@@ -154,7 +170,7 @@ int play_audio() {
 
 
 /* plays specified album, starting at specified track number */
-int controls(album* albm, int start_track) {
+void controls(album* albm, int start_track) {
   current_focus = LIB;
   for(;;) {
 
@@ -186,7 +202,6 @@ int controls(album* albm, int start_track) {
      }
 
 
-
     fgets(command, 256, stdin);
     command[strcspn(command, "\n")] = 0;
 
@@ -205,7 +220,6 @@ int controls(album* albm, int start_track) {
           play_cmd = 1;
           pthread_cond_signal(&player_sleep);
           pthread_join(thread_table[0], NULL);
-          //play_cmd = 1;
           pthread_cond_signal(&lib_sleep);
 
           pthread_join(thread_table[1], NULL);
@@ -223,8 +237,9 @@ int controls(album* albm, int start_track) {
       pthread_mutex_unlock(&lib_cmd_tex);
     }
 
-    else if (current_focus == CONT & songs != NULL) {
+    else if (current_focus == CONT && songs != NULL) {
       pthread_mutex_lock(&play_cmd_tex);
+      pthread_cond_signal(&player_sleep);
       play_cmd = 1;
       if (play_cmd) {
         pthread_cond_wait(&control_sleep, &play_cmd_tex);

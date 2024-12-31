@@ -1,7 +1,7 @@
 #include <music_defs.h>
 #include <stdio.h>
 
-extern GList* library[81];
+extern GList* library[27];
 
 extern GList* songs;
 extern int current_focus;
@@ -26,7 +26,7 @@ void print_artists(void) {
   GList* art_walker;
   artist* cur_artist;
   int i;
-  for (i = 0; i < 81; i++) {
+  for (i = 0; i < 27; i++) {
     art_walker = library[i];
     while (art_walker != NULL) {
       cur_artist = (artist*) art_walker->data;
@@ -68,7 +68,7 @@ void cursor(void) {
 
   int lib_index;
   int track_check;
-  //pthread_mutex_lock(&lib_tex);
+
   for(;;) {
     pthread_mutex_lock(&lib_cmd_tex);
     while (!found_artist) {
@@ -95,7 +95,7 @@ void cursor(void) {
  //       break;
   //    }
 
-      lib_index = command[0] - 41;
+      lib_index = tolower(command[0]) - 97;
 
       found_artist = g_list_find_custom(library[lib_index], command,
         (GCompareFunc) find_artist);
@@ -118,11 +118,9 @@ void cursor(void) {
         if (!strcmp(command, "refresh")) {
           continue;
         }
-
         else if (!strcmp(command, ":back")) {
           break;
         }
-
         else if (!strcmp(command, ":exit")) {
           pthread_exit(0);
         }
@@ -137,24 +135,48 @@ void cursor(void) {
 
         cur_album = (album*) found_album->data;
         found_album = 0;
-        //while (found_track) {
+
+        while (1) {
           print_songs(cur_album);
-
-
-          if (songs == NULL) first_song = 1;
-          else new_song = 1;
- 
-          songs = cur_album->songs;
 
           lib_cmd = 0;
           pthread_cond_signal(&control_sleep);
           pthread_cond_wait(&lib_sleep, &lib_cmd_tex);
+
+          
+          if (!strcmp(command, "refresh")) {
+            continue;
+          }
+          else if (!strcmp(command, ":back")) {
+            break;
+          }
+          else if (!strcmp(command, ":exit")) {
+            pthread_exit(0);
+          }
+
+          track_check = atoi(command);
+          found_song = g_list_find_custom(cur_album->songs,
+            (gconstpointer) &track_check, (GCompareFunc) find_track);
+
+          if (!found_song) {
+            printf("No such song\n\n");
+            continue;
+          }
+
+          if (songs == NULL) first_song = 1;
+          else new_song = 1;
+ 
+          songs = found_song;
+          
+          lib_cmd = 0;
+          pthread_cond_signal(&control_sleep);
+          pthread_cond_wait(&lib_sleep, &lib_cmd_tex);
+
           if (!strcmp(command, ":exit")) {
             pthread_exit(0);
+          }
         }
-       // }
       }
     }
   }
-//  pthread_mutex_unlock(&lib_tex);
 }
