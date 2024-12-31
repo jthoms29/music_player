@@ -25,6 +25,7 @@ pthread_cond_t lib_sleep = PTHREAD_COND_INITIALIZER;
 GList library[81];
 
 
+pthread_t thread_table[3];
 
 ma_engine* engine;
 ma_sound sound;
@@ -49,20 +50,21 @@ ma_result init_engine() {
   return result;
 } 
 
-
 int play_audio() {
   song* cur_song;
   pthread_t check;
   ma_result result;
 
   int paused = 0;
-  /* needed for cond variable */
 
   for(;;) {
     /* No songs currently, go to sleep */
     pthread_mutex_lock(&song_check_tex);
     while (!songs) {
       pthread_cond_wait(&player_sleep, &song_check_tex);
+      if (play_cmd && !strcmp(command, ":exit")) {
+        pthread_exit(0);
+      }
     }
     pthread_mutex_unlock(&song_check_tex);
 
@@ -73,13 +75,13 @@ int play_audio() {
     if (result != MA_SUCCESS) {
       return result;
     }
-
     ma_sound_start(&sound);
     while(!ma_sound_at_end(&sound)) {
       /* refresh line */
 
       if (current_focus == CONT) {
-        printf("\r%s - %s: %d - %s    command:  ", cur_song->artist, 
+
+        printf("%s - %s: %d - %s    command:  ", cur_song->artist, 
           cur_song->album, cur_song->track, cur_song->title);
         fflush(stdout);
       }
@@ -91,6 +93,7 @@ int play_audio() {
         if (!strcmp(command, "refresh")) {
           break;
         }
+
         
         else if (!strcmp(command, "next")) {
           songs = songs->next;
@@ -113,6 +116,15 @@ int play_audio() {
           paused = 0;
           ma_sound_start(&sound);
         }
+
+        else if (!strcmp(command, ":exit")) {
+          ma_sound_stop(&sound);
+          ma_sound_uninit(&sound);
+          free(engine);
+          pthread_exit(0);
+        }
+
+
         pthread_mutex_lock(&play_cmd_tex);
         play_cmd = 0;
         pthread_cond_signal(&control_sleep);
@@ -122,16 +134,18 @@ int play_audio() {
     
     ma_sound_stop(&sound);
     ma_sound_uninit(&sound);
+   // sound = NULL;
 
     if (play_cmd) {
       pthread_mutex_lock(&play_cmd_tex);
-        play_cmd = 0;
-        pthread_cond_signal(&control_sleep);
+      play_cmd = 0;
+      pthread_cond_signal(&control_sleep);
       pthread_mutex_unlock(&play_cmd_tex);
     }
 
     else {
       songs = songs->next;
+      printf("\n");
     }
   }
 }
@@ -185,6 +199,19 @@ int controls(album* albm, int start_track) {
       strcpy(command, "nothing");
       current_focus = CONT;
     }
+
+    else if (!strcmp(command, ":exit")) {
+          lib_cmd = 1;
+          play_cmd = 1;
+          pthread_cond_signal(&player_sleep);
+          pthread_join(thread_table[0], NULL);
+          //play_cmd = 1;
+          pthread_cond_signal(&lib_sleep);
+
+          pthread_join(thread_table[1], NULL);
+
+          pthread_exit(0);
+    }
     
     if (current_focus == LIB) {
       pthread_mutex_lock(&lib_cmd_tex);
@@ -210,20 +237,18 @@ int controls(album* albm, int start_track) {
 
 int main(int argc, char** argv) {
   char* path;
-  pthread_t thread_table[3];
+  //pthread_t thread_table[3];
   int i;
   path = (char*) malloc(strlen(argv[1]));
   strcpy(path, argv[1]);
   init_engine();
   scan_folder(path);
-  pthread_create(thread_table, NULL, cursor, NULL);
-  pthread_create(thread_table+1, NULL, play_audio, NULL);
+  pthread_create(thread_table+1, NULL, cursor, NULL);
+  pthread_create(thread_table, NULL, play_audio, NULL);
   pthread_create(thread_table+2, NULL, controls, NULL);
 
-  for(i=0; i < 3; i++) {
-    pthread_join(thread_table[i], NULL);
-  }
+  pthread_join(thread_table[2], NULL);
 
-
+  free_lib();
   return 0;
 }

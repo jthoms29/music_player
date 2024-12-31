@@ -7,6 +7,10 @@
 #define MAX_TITLE 128
 #define MAX_PATH 128
 
+#define LIB 0
+#define CONT 1
+
+
 typedef struct song {
   char path[MAX_PATH];
   char title[MAX_TITLE];
@@ -36,7 +40,7 @@ typedef struct artist {
 
 
 int play_audio();
-
+void free_lib();
 /*library_operations */
 song* read_tag(char* path);
 int print_song_data(song* sng);

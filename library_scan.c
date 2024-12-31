@@ -241,4 +241,29 @@ void scan_folder(char* path) {
   closedir(dir);
 }
 
+/* songs structs have no seperately malloced data, can just use free */
+
+GDestroyNotify free_album(void* albm) {
+  album* cur_album = (album*) albm;
+/*  printf("freeing %s\n", cur_album->title); */
+  g_list_free_full(cur_album->songs, free);
+  free(cur_album);
+}
+
+GDestroyNotify free_artist(void* artst) {
+  artist* cur_artist = (artist*) artst;
+/*  printf("freeing %s\n", cur_artist->name); */
+  g_list_free_full(cur_artist->albums, free_album);
+  free(cur_artist);
+}
+
+
+void free_lib() {
+  int i;
+  for (i = 0; i < 81; i++) {
+    g_list_free_full(library[i], free_artist);
+  }
+  printf("library freed\n");
+}
+
 

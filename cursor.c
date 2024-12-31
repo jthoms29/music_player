@@ -61,7 +61,6 @@ void print_songs(album* albm) {
 
 }
 
-
 void cursor(void) {
   GList *found_artist, *found_album, *found_song;
   artist* cur_artist;
@@ -69,7 +68,6 @@ void cursor(void) {
 
   int lib_index;
   int track_check;
-
   //pthread_mutex_lock(&lib_tex);
   for(;;) {
     pthread_mutex_lock(&lib_cmd_tex);
@@ -88,6 +86,9 @@ void cursor(void) {
       if (!strcmp(command, "refresh")) {
         pthread_mutex_unlock(&lib_cmd_tex);
         continue;
+      }
+      else if (!strcmp(command, ":exit")) {
+        pthread_exit(0);
       }
 
 //      else if (!strcmp(command, ":back")) {
@@ -122,6 +123,10 @@ void cursor(void) {
           break;
         }
 
+        else if (!strcmp(command, ":exit")) {
+          pthread_exit(0);
+        }
+
         found_album = g_list_find_custom(cur_artist->albums, command,
           (GCompareFunc) find_album);
 
@@ -144,6 +149,9 @@ void cursor(void) {
           lib_cmd = 0;
           pthread_cond_signal(&control_sleep);
           pthread_cond_wait(&lib_sleep, &lib_cmd_tex);
+          if (!strcmp(command, ":exit")) {
+            pthread_exit(0);
+        }
        // }
       }
     }
