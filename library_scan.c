@@ -5,7 +5,7 @@
 #include <dirent.h>
 #include <ctype.h>
 #include <strings.h>
-
+#include <bsd/string.h>
 extern GList* library[27];
 
 /* functions for Glist insertion and searching *********************** */
@@ -89,8 +89,10 @@ int song_to_lib(song* sng) {
       printf("malloc failure\n");
       return 1;
     }
-
-    strcpy(new_artist->name, sng->artist);
+    if (strlcpy(new_artist->name, sng->artist, MAX_TITLE) >= MAX_TITLE) {
+        return -1;
+    }
+    new_artist->albums = NULL;
     /* Will be inserted in alphabetical order */
     artist_start = g_list_insert_sorted(library[index], 
       (gpointer) new_artist, (GCompareFunc) insert_artist);
@@ -113,20 +115,23 @@ int song_to_lib(song* sng) {
 
   /* Album was not found in artist, must be added */
   else {
+    
     new_album = (album*) malloc(sizeof(album));
     if (!new_album) {
       printf("malloc failure\n");
       return 1;
     }
-    strcpy(new_album->title, sng->album);
-    strcpy(new_album->artist, sng->artist);
-    strcpy(new_album->genre, sng->genre);
+    if (strlcpy(new_album->title, sng->album, MAX_TITLE) >= MAX_TITLE) return -1;
+    if (strlcpy(new_album->artist, sng->artist, MAX_TITLE) >= MAX_TITLE) return -1;
+    if (strlcpy(new_album->genre, sng->genre, MAX_TITLE) >= MAX_TITLE) return -1;
     new_album->year = sng->year;
     new_album->tracks = 0;
+    new_album->songs = NULL;
 
     album_start = g_list_insert_sorted(found_artist->albums,
       (gpointer) new_album, (GCompareFunc) insert_album);
     found_artist->albums = album_start;
+
 
     found_album = new_album;
   }
@@ -177,11 +182,11 @@ song* read_tag(char* path) {
 
   /* add tag data to song struct and return */
 
-  strcpy(song_ret->path, path);
-  strcpy(song_ret->title, taglib_tag_title(tag));
-  strcpy(song_ret->artist, taglib_tag_artist(tag));
-  strcpy(song_ret->album, taglib_tag_album(tag));
-  strcpy(song_ret->genre, taglib_tag_genre(tag));
+  if (strlcpy(song_ret->path, path, MAX_PATH) >= MAX_PATH) return 0;
+  if (strlcpy(song_ret->title, taglib_tag_title(tag), MAX_PATH) >= MAX_TITLE) return 0;
+  if (strlcpy(song_ret->artist, taglib_tag_artist(tag), MAX_PATH) >= MAX_TITLE) return 0;
+  if (strlcpy(song_ret->album, taglib_tag_album(tag), MAX_TITLE) >= MAX_TITLE) return 0;
+  if (strlcpy(song_ret->genre, taglib_tag_genre(tag), MAX_TITLE) >= MAX_TITLE) return 0;
   song_ret->year = taglib_tag_year(tag);
   song_ret->track = taglib_tag_track(tag);
 
@@ -212,10 +217,12 @@ void scan_folder(char* path) {
       continue;
     }
 
-    strcpy(full, path);
-    strcat(full, "/");
-    strcat(full, de->d_name);
+    if (strlcpy(full, path, MAX_PATH) >= MAX_PATH) continue;
+    if (strlcat(full, "/", MAX_PATH) >= MAX_PATH) continue;
+    if (strlcat(full, de->d_name, MAX_PATH) >= MAX_PATH) continue;
 
+
+//    printf("%ld\n", strlen(full));
     /* If this file is a directory, scan recursively */
     if (de->d_type == DT_DIR) {
       scan_folder(full);
@@ -223,7 +230,6 @@ void scan_folder(char* path) {
     else {
       tag_return = read_tag(full);
       if (tag_return) {
-        printf("%d\n", strlen(full));
         song_to_lib(tag_return);
       }
     }
