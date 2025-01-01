@@ -1,6 +1,7 @@
+# John Thoms
 CC = gcc
 CFLAGS = -g $(shell pkg-config --cflags glib-2.0)
-LIBS = -ldl -lpthread -lm -ltag_c -ltag -lstdc++ -lz $(shell pkg-config --libs glib-2.0)
+LIBS = -ldl -lpthread -lm -ltag_c -ltag -lstdc++ -lbsd -lz $(shell pkg-config --libs glib-2.0)
 CPPFLAGS = -Wall -pedantic -Wextra
 
 TAGLIB = /usr/local/lib/

@@ -1,3 +1,4 @@
+//John Thoms
 #include <stdio.h>
 #include <music_defs.h>
 #include <string.h>
@@ -191,9 +192,9 @@ song* read_tag(char* path) {
   song_ret->track = taglib_tag_track(tag);
 
 //  print_song_data(song_ret);
+  taglib_file_free(file);
   return song_ret;
 }
-
 
 
 /* recursively scans the given folder, adding any audio files found within to
@@ -201,28 +202,40 @@ song* read_tag(char* path) {
 void scan_folder(char* path) {
   struct dirent *de; /*pointer for directory entry */
   DIR *dir;           /* DIR pointer, what opendir returns */
-  char full[256];     /* Used to hold Full path of file */
+  char full[MAX_PATH];     /* Used to hold Full path of file */
   song* tag_return;
 
-
+  int attempt;
   dir = opendir(path);
 
   if (!dir) {
     printf("Invalid path\n");
+    printf("%s - %s\n", path, strerror(errno));
     return;
   }
+
     
   while((de = readdir(dir)) != NULL) {
     if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) {
       continue;
     }
 
-    if (strlcpy(full, path, MAX_PATH) >= MAX_PATH) continue;
-    if (strlcat(full, "/", MAX_PATH) >= MAX_PATH) continue;
-    if (strlcat(full, de->d_name, MAX_PATH) >= MAX_PATH) continue;
+    if ((attempt = strlcpy(full, path, MAX_PATH)) >= MAX_PATH) {
+      printf("1: Path too long - %s - %d\n", path, attempt);
+      continue;
+    }
+
+    if ((attempt = strlcat(full, "/", MAX_PATH)) >= MAX_PATH) {
+      printf("2: Path too long - %s - %d\n", path, attempt);
+      continue;
+    }
+
+    if ((attempt = strlcat(full, de->d_name, MAX_PATH)) >= MAX_PATH) {
+      printf("3: Path too long - %s - %d\n", path, attempt);
+      continue;
+    }
 
 
-//    printf("%ld\n", strlen(full));
     /* If this file is a directory, scan recursively */
     if (de->d_type == DT_DIR) {
       scan_folder(full);
@@ -259,7 +272,6 @@ void free_lib() {
   for (i = 0; i < 27; i++) {
     g_list_free_full(library[i], free_artist);
   }
-  printf("library freed\n");
 }
 
 

@@ -1,26 +1,31 @@
+// John Thoms
+
 #include <music_defs.h>
 #include <stdio.h>
-
+#include <ctype.h>
+#include <glib.h>
 extern GList* library[27];
 
 extern GList* songs;
-extern int current_focus;
-extern int swap;
 
-extern int cur_window;
+/* used to indicate special commands to input thread that should be sent to
+ * player */
 extern int new_song;
 extern int first_song;
-//artist* current_artist;
-//album* current_album;
 
 extern pthread_mutex_t lib_cmd_tex;
 extern pthread_mutex_t control_tex;
 
+extern pthread_mutex_t song_choice_tex;
+
 extern pthread_cond_t lib_sleep;
 extern pthread_cond_t control_sleep;
+
 extern int lib_cmd;
 
+/* global command variable, cursor thread will read when signalled */
 extern char command[256];
+
 /* Go through library, printing the name of each artist */
 void print_artists(void) {
   GList* art_walker;
@@ -36,6 +41,7 @@ void print_artists(void) {
   }
 }
 
+/* print all albums from specified artist */
 void print_albums(artist* artst) {
     GList* alb_walker;
     album* cur_album;
@@ -48,6 +54,7 @@ void print_albums(artist* artst) {
     }
 }
 
+/* print all songs from specified album */
 void print_songs(album* albm) {
   GList* song_walker;
   song* cur_song;
@@ -61,14 +68,16 @@ void print_songs(album* albm) {
 
 }
 
-void cursor(void) {
+/* this thread moves through the library, taking user input from the control
+ * thread in main.c */
+void* cursor(void* arg) {
   GList *found_artist, *found_album, *found_song;
   artist* cur_artist;
   album* cur_album;
 
   int lib_index;
   int track_check;
-
+  (void) arg; /* compiler warning */
   for(;;) {
     pthread_mutex_lock(&lib_cmd_tex);
     while (!found_artist) {
@@ -76,11 +85,10 @@ void cursor(void) {
 
       print_artists();
       printf("Choose artist: \n");
-      //fgets(choice, MAX_TITLE, stdin);
       lib_cmd = 0;
 
+      /* this thread goes to sleep, waiting for user input */
       pthread_cond_signal(&control_sleep);
-
       pthread_cond_wait(&lib_sleep, &lib_cmd_tex);
      
       if (!strcmp(command, "refresh")) {
@@ -91,11 +99,12 @@ void cursor(void) {
         pthread_exit(0);
       }
 
-//      else if (!strcmp(command, ":back")) {
- //       break;
-  //    }
-
       lib_index = tolower(command[0]) - 97;
+
+      if (lib_index < 0 || lib_index > 26) {
+        printf("No such artist\n\n");
+        continue;
+      }
 
       found_artist = g_list_find_custom(library[lib_index], command,
         (GCompareFunc) find_artist);
@@ -163,10 +172,18 @@ void cursor(void) {
             continue;
           }
 
+          pthread_mutex_lock(&song_choice_tex);
+
+          /* if nothing is currently playing, first_song must be set to 1 so
+           * player thread can be signalled */
           if (songs == NULL) first_song = 1;
+
+          /* lets controll function know it should send 'refresh' command to
+           * player so that new song can be started */
           else new_song = 1;
  
           songs = found_song;
+          pthread_mutex_unlock(&song_choice_tex);
           
           lib_cmd = 0;
           pthread_cond_signal(&control_sleep);
@@ -175,6 +192,7 @@ void cursor(void) {
           if (!strcmp(command, ":exit")) {
             pthread_exit(0);
           }
+          break;
         }
       }
     }

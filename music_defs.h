@@ -4,8 +4,8 @@
 #define MUSIC_DEFS_H
 
 #include <glib.h>
-#define MAX_TITLE 128
-#define MAX_PATH 128
+#define MAX_TITLE 256
+#define MAX_PATH 512
 
 #define LIB 0
 #define CONT 1
@@ -39,7 +39,7 @@ typedef struct artist {
 } artist;
 
 
-int play_audio();
+void* play_audio(void* arg);
 void free_lib();
 /*library_operations */
 song* read_tag(char* path);
@@ -49,7 +49,7 @@ void lib_test(void);
 
 
 /* cursor */
-void cursor(void);
+void* cursor(void* arg);
 gint find_artist(gconstpointer list_artist, gconstpointer my_artist_str);
 gint find_album(gconstpointer list_album, gconstpointer my_album_str);
 gint find_track(gconstpointer alb_track, gconstpointer track_idx);
