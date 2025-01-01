@@ -1,13 +1,14 @@
-/* John Thoms */
 #include <stdio.h>
 #include <music_defs.h>
 #include <string.h>
 #include <tag_c.h>
 #include <dirent.h>
+#include <ctype.h>
+#include <strings.h>
 
-#include<strings.h>
 extern GList* library[27];
 
+/* functions for Glist insertion and searching *********************** */
 gint find_artist(gconstpointer list_artist, gconstpointer my_artist_str) {
   const char* str_ref = (char*) my_artist_str;
   const artist* art_ref = (artist*) list_artist;
@@ -46,13 +47,16 @@ gint find_track(gconstpointer alb_song, gconstpointer track_idx) {
   int trck = *((int*) track_idx);
 
   return song_ref->track - trck;
-
 }
 
+/* ************************************************************************ */
+
+
+/* Adds a song struct to the global library array within the proper artist
+ * and album sublists */
 int song_to_lib(song* sng) {
-  char* sng_artist;
   GList *found_artist_loc, *found_album_loc, *found_song_loc;
-  GList *artist_start, *album_start, *song_start;
+  GList *artist_start, *album_start;
   artist *found_artist, *new_artist;
   album *found_album, *new_album;
   char start_letter; 
@@ -62,6 +66,13 @@ int song_to_lib(song* sng) {
    * global list array*/
   start_letter = tolower(sng->artist[0]);
   index = start_letter - 97;
+
+  if (index < 0 || index > 26) {
+    printf("%s: %d - ", sng->artist, index);
+    printf("Invalid name\n");
+    return 1;
+  }
+
 
   found_artist_loc = g_list_find_custom(library[index], 
     sng->artist, (GCompareFunc) find_artist); 
@@ -73,6 +84,12 @@ int song_to_lib(song* sng) {
   /* If the artist was not found in the library, they must be added */
   else {
     new_artist = (artist*) malloc(sizeof(artist));
+
+    if (!new_artist) {
+      printf("malloc failure\n");
+      return 1;
+    }
+
     strcpy(new_artist->name, sng->artist);
     /* Will be inserted in alphabetical order */
     artist_start = g_list_insert_sorted(library[index], 
@@ -97,6 +114,10 @@ int song_to_lib(song* sng) {
   /* Album was not found in artist, must be added */
   else {
     new_album = (album*) malloc(sizeof(album));
+    if (!new_album) {
+      printf("malloc failure\n");
+      return 1;
+    }
     strcpy(new_album->title, sng->album);
     strcpy(new_album->artist, sng->artist);
     strcpy(new_album->genre, sng->genre);
@@ -119,6 +140,24 @@ int song_to_lib(song* sng) {
   return 0;
 }
 
+/* testing, prints data from song struct */
+int print_song_data(song* sng) {
+  if (!sng) {
+    return -1;
+  }
+  printf("Title: %s\n", sng->title);
+  printf("Artist: %s\n", sng->artist);
+  printf("Album: %s\n", sng->album);
+  printf("Track: %d\n", sng->track);
+  printf("Year: %d\n", sng->year);
+  printf("Genre: %s\n", sng->genre);
+  printf("Path: %s\n", sng->path);
+  return 0;
+
+}
+
+/* will read tags from the audio file from the given path, creating a new song
+ * struct with its data */
 song* read_tag(char* path) {
   song* song_ret;
   TagLib_File *file;
@@ -132,12 +171,12 @@ song* read_tag(char* path) {
   /* Might not be ideal to allocate each song individually, may find better mem
    * allocation method. */
   song_ret = (song*) malloc(sizeof(song));
-
   /* malloc failure */
   if (!song_ret)
     return NULL;
 
   /* add tag data to song struct and return */
+
   strcpy(song_ret->path, path);
   strcpy(song_ret->title, taglib_tag_title(tag));
   strcpy(song_ret->artist, taglib_tag_artist(tag));
@@ -146,27 +185,14 @@ song* read_tag(char* path) {
   song_ret->year = taglib_tag_year(tag);
   song_ret->track = taglib_tag_track(tag);
 
+//  print_song_data(song_ret);
   return song_ret;
 }
 
 
 
-int print_song_data(song* sng) {
-  if (!sng) {
-    return -1;
-  }
-
-  printf("Title: %s\n", sng->title);
-  printf("Artist: %s\n", sng->artist);
-  printf("Album: %s\n", sng->album);
-  printf("Track: %d\n", sng->track);
-  printf("Year: %d\n", sng->year);
-  printf("Genre: %s\n", sng->genre);
-  printf("Path: %s\n", sng->path);
-  return 0;
-
-}
-
+/* recursively scans the given folder, adding any audio files found within to
+ * the global library array */
 void scan_folder(char* path) {
   struct dirent *de; /*pointer for directory entry */
   DIR *dir;           /* DIR pointer, what opendir returns */
@@ -197,6 +223,7 @@ void scan_folder(char* path) {
     else {
       tag_return = read_tag(full);
       if (tag_return) {
+        printf("%d\n", strlen(full));
         song_to_lib(tag_return);
       }
     }
@@ -204,21 +231,23 @@ void scan_folder(char* path) {
   closedir(dir);
 }
 
+/* freeing functions **************************************** */
+
 /* songs structs have no seperately malloced data, can just use free */
 
-GDestroyNotify free_album(void* albm) {
+void free_album(void* albm) {
   album* cur_album = (album*) albm;
   g_list_free_full(cur_album->songs, free);
   free(cur_album);
 }
 
-GDestroyNotify free_artist(void* artst) {
+void free_artist(void* artst) {
   artist* cur_artist = (artist*) artst;
   g_list_free_full(cur_artist->albums, free_album);
   free(cur_artist);
 }
 
-
+/* frees entire library. Use before exit */
 void free_lib() {
   int i;
   for (i = 0; i < 27; i++) {
