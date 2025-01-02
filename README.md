@@ -2,6 +2,7 @@
 A simple terminal music player. Supply a path to a directory containing audio
 files as a command line argument.
 
+![example](https://github.com/user-attachments/assets/e18cf5de-3718-435d-af1f-637190dc0963)
 
 ## Dependencies
 - miniaudio.h - https://github.com/mackron/miniaudio
