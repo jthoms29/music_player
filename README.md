@@ -1,18 +1,18 @@
 # `music_player`
-A simple terminal music player
+A simple terminal music player. Supply a path to a directory containing audio
+files as a command line argument.
 
 
 ## Dependencies
-- miniaudio.h - included in repo
-- 
+- miniaudio.h - https://github.com/mackron/miniaudio
+- GLib - https://gitlab.gnome.org/GNOME/glib/
+- taglib - https://github.com/taglib/taglib
+- libbsd
 
-## Guide
-
+# Guide
 ### Commands
 - `:cont` - move focus to audio player controls
 - `:lib` - move focus to library browser
-
-
 
 #### Library browser commands
 Input artist/album name (case insensitive) to move to that specific menu.
