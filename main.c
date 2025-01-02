@@ -116,30 +116,30 @@ void* play_audio(void* arg) {
 
         /* will reprint the currently playing song. Used for when user switches
          * from library view to song control view */
-        if (!strcmp(command, "refresh")) {
+        if (!strcmp(command, ":refresh")) {
           break;
         }
 
-        else if (!strcmp(command, "next")) {
+        else if (!strcmp(command, ":next")) {
           pthread_mutex_lock(&song_choice_tex);
           songs = songs->next;
           paused = 0;
           break;
         }
 
-        else if (!strcmp(command, "prev")) {
+        else if (!strcmp(command, ":prev")) {
           pthread_mutex_lock(&song_choice_tex);
           songs = songs->prev;
           paused = 0;
           break;
         }
 
-        else if (!strcmp(command, "pause") && !paused) {
+        else if (!strcmp(command, ":pause") && !paused) {
           ma_sound_stop(&sound);
           paused = 1;
         }
 
-        else if (!strcmp(command, "unpause") && paused) {
+        else if (!strcmp(command, ":unpause") && paused) {
           paused = 0;
           ma_sound_start(&sound);
         }
@@ -207,7 +207,7 @@ void* controls(void* arg) {
     else if (new_song) { 
       current_focus = CONT;
       new_song = 0;
-      strcpy(command, "refresh");
+      strcpy(command, ":refresh");
 
       pthread_mutex_lock(&play_cmd_tex);
         play_cmd = 1;
@@ -226,7 +226,7 @@ void* controls(void* arg) {
     command[strcspn(command, "\n")] = 0;
 
     if (!strcmp(command, ":lib") && current_focus != LIB) {
-        strcpy(command, "refresh"); /* reprint last library message */
+        strcpy(command, ":refresh"); /* reprint last library message */
         current_focus = LIB;
     }
 

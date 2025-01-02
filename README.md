@@ -13,6 +13,7 @@ files as a command line argument.
 ### Commands
 - `:cont` - move focus to audio player controls
 - `:lib` - move focus to library browser
+- `:exit` - exits the program
 
 #### Library browser commands
 Input artist/album name (case insensitive) to move to that specific menu.
@@ -28,5 +29,5 @@ Within the album view, songs are specified by their track number.
 
 ## Current limitations
 - Only allows artists within alphabetical range a-z
-- Static path and name sizes, both currently can't exceed a particlar length
+- Static path and name sizes, both currently can't exceed a particular length
 
