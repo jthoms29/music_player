@@ -184,8 +184,8 @@ song* read_tag(char* path) {
   /* add tag data to song struct and return */
 
   if (strlcpy(song_ret->path, path, MAX_PATH) >= MAX_PATH) return 0;
-  if (strlcpy(song_ret->title, taglib_tag_title(tag), MAX_PATH) >= MAX_TITLE) return 0;
-  if (strlcpy(song_ret->artist, taglib_tag_artist(tag), MAX_PATH) >= MAX_TITLE) return 0;
+  if (strlcpy(song_ret->title, taglib_tag_title(tag), MAX_TITLE) >= MAX_TITLE) return 0;
+  if (strlcpy(song_ret->artist, taglib_tag_artist(tag), MAX_TITLE) >= MAX_TITLE) return 0;
   if (strlcpy(song_ret->album, taglib_tag_album(tag), MAX_TITLE) >= MAX_TITLE) return 0;
   if (strlcpy(song_ret->genre, taglib_tag_genre(tag), MAX_TITLE) >= MAX_TITLE) return 0;
   song_ret->year = taglib_tag_year(tag);

@@ -71,7 +71,7 @@ void print_songs(album* albm) {
 /* this thread moves through the library, taking user input from the control
  * thread in main.c */
 void* cursor(void* arg) {
-  GList *found_artist, *found_album, *found_song;
+  GList *found_artist = 0, *found_album = 0, *found_song = 0;
   artist* cur_artist;
   album* cur_album;
 
